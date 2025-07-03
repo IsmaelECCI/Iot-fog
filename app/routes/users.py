@@ -35,7 +35,7 @@ async def obtener_usuarios():
     return usuarios
 
 #creación de un usuario
-@router.post("/users")
+@router.post("/users", response_model=TokenOut)
 async def crear_usuario(usuario: UsuarioIn):
     db = get_db()
     if db is None:
@@ -65,16 +65,16 @@ async def crear_usuario(usuario: UsuarioIn):
     await db["usuarios"].insert_one(nuevo_usuario)
 
     token = crear_token({
-    "           username": usuario.username,
-                "emaiil": usuario.email,
-                "rol": usuario.rol
-                })
+        "username": usuario.username,
+        "email": usuario.email,
+        "rol": usuario.rol
+        })
 
     return {"access_token": token, "token_type": "bearer"}
 
 # eliminar un usuario
 @router.delete("/users/{username}")
-async def eliminar_usuario(username: str):
+async def eliminar_usuario(username: str, user: dict = Depends(get_current_user)):
     db = get_db()
     if db is None:
         raise HTTPException(status_code=500, detail="Base de datos no inicializada")
@@ -87,7 +87,7 @@ async def eliminar_usuario(username: str):
 
 # actualizar datos de un usuario
 @router.patch("/users/{username}")
-async def actualizar_usuario(username: str, datos: UsuarioUpdate):
+async def actualizar_usuario(username: str, datos: UsuarioUpdate, user: dict = Depends(get_current_user)):
     db = get_db()
     if db is None:
         raise HTTPException(status_code=500, detail="Base de datos no inicializada")

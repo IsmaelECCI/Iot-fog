@@ -1,8 +1,4 @@
 from fastapi import APIRouter, HTTPException, Depends
-
-
-
-
 from app.routes.auth import get_current_user
 from app.routes.schemas import  VariableIn
 from app.db import get_db
@@ -41,7 +37,7 @@ async def agregar_variable(variable: VariableIn, user: dict = Depends(get_curren
     return {"message": "Variable registrada correctamente"}
 
 @router.get("/variables")
-async def obtener_dispositivos(user: dict = Depends(get_current_user)):
+async def obtener_variables(user: dict = Depends(get_current_user)):
     db = get_db()
     if db is None:
         raise HTTPException(status_code=500, detail="Base de datos no inicializada")

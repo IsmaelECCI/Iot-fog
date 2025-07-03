@@ -4,13 +4,14 @@ services:
   api:
     build: .
     container_name: fastapi-auth
+    hostname: api
     ports:
       - "8000:8000"
     depends_on:
       - mongo
       - emqx
     networks:
-      - red-auth
+      - red-auth  # ✅ misma red que los otros contenedores
     environment:
       - EMQX_API_BASE=http://emqx:8081/api/v4
       - EMQX_MANAGEMENT__DEFAULT_APPLICATION__USERNAME=admin
@@ -47,59 +48,56 @@ services:
     networks:
       - red-auth
 
-
-
   emqx:
     image: emqx/emqx:4.4.18
     container_name: emqx
     restart: unless-stopped
-    networks:
-      - red-auth
-
     ports:
       - "1883:1883"
       - "8083:8083"
       - "18083:18083"
       - "8081:8081"
-
     environment:
       - EMQX_NAME=emqx
-      # --- CONFIGURACIÓN GENERAL ---
       - EMQX_ALLOW_ANONYMOUS=false
       - EMQX_LOADED_PLUGINS=emqx_management,emqx_dashboard,emqx_auth_mongo
-      - EMQX_LOG__LEVEL=debug  # Activar logs detallados
-      # --- Habilita auth_mongo y datos de conexión ---
+      - EMQX_LOG__LEVEL=debug
       - EMQX_AUTH__MONGO__ENABLE=true
-      - EMQX_AUTH__MONGO__SERVER=auth-mongo:27017
+      - EMQX_AUTH__MONGO__SERVER=mongo:27017
       - EMQX_AUTH__MONGO__USERNAME=root
       - EMQX_AUTH__MONGO__PASSWORD=example
       - EMQX_AUTH__MONGO__DATABASE=iot
-
-      # --- Colección de usuarios ---
       - EMQX_AUTH__MONGO__AUTH_QUERY__COLLECTION=mqtt_user
       - EMQX_AUTH__MONGO__AUTH_QUERY__SELECTOR=username=%u
       - EMQX_AUTH__MONGO__AUTH_QUERY__PASSWORD_FIELD=password
       - EMQX_AUTH__MONGO__AUTH_QUERY__PASSWORD_HASH=bcrypt
-
-      # --- Colección ACL (mqtt_acl) ---
       - EMQX_AUTH__MONGO__ACL_QUERY=on
       - EMQX_AUTH__MONGO__ACL_QUERY__DATABASE=iot
       - EMQX_AUTH__MONGO__ACL_QUERY__COLLECTION=mqtt_acl
       - EMQX_AUTH__MONGO__ACL_QUERY__SELECTOR=username=%u
       - EMQX_AUTH__MONGO__ACL_QUERY__TOPIC_FIELD=topic
-
-      # Opcionales para desarrollo:
       - EMQX_AUTH__MONGO__ACL_QUERY__CACHE_ENABLE=false
       - EMQX_AUTH__MONGO__ACL_QUERY__TOPIC_FUZZY=true
-
-      # acceso a dashboard
       - EMQX_DASHBOARD__DEFAULT_USER__PASSWORD=admin123..
       - EMQX_MANAGEMENT__DEFAULT_APPLICATION__SECRET=admin123..
     depends_on:
       - mongo
+    networks:
+      - red-auth
     volumes:
       - emqx-data:/opt/emqx/data
       - emqx-log:/opt/emqx/log
+
+  frontend:
+    build:
+      context: ./FRONTEND_2.0
+    container_name: frontend-app
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    networks:
+      - red-auth
 
 volumes:
   auth-mongo-data:
@@ -108,3 +106,4 @@ volumes:
 
 networks:
   red-auth:
+    driver: bridge

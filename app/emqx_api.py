@@ -61,7 +61,13 @@ async def init_emqx_resources() -> None:
     global saverResource, alarmResource
 
     logging.info("[startup] Esperando a que EMQX arranque…")
-    await asyncio.sleep(10)
+    for _ in range(5):
+        try:
+            await emqx_get("/status")
+            break
+        except:
+            await asyncio.sleep(2)
+
 
     # 1) Leer todos los recursos
     try:

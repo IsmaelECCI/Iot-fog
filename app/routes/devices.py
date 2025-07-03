@@ -93,7 +93,9 @@ async def crear_dispositivo(
 
     try:
         rule_resp = await emqx_post("/rules", new_rule)
-        rule_id = rule_resp["data"]["id"]
+        print("Respuesta de EMQX al crear regla:", rule_resp)
+        data = rule_resp.get("data") or rule_resp
+        rule_id = data.get("id")
         await db["dispositivos"].update_one(
             {"_id": res.inserted_id},
             {"$set": {"emqx_rule_id": rule_id}}
